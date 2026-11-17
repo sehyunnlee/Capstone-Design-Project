@@ -50,6 +50,12 @@ Capstone-Design-Project/
 pip install opencv-python numpy pandas
 ```
 
+## 웹 UI 실행 방법 (Streamlit)
+
+1. 패키지 설치
+```bash
+pip install -r requirements.txt
+
 ## 사용 방법
 
 ```python
