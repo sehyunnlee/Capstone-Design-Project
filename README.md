@@ -54,7 +54,7 @@ pip install opencv-python numpy pandas
 
 1. 패키지 설치
 ```bash
-pip install -r requirements.txt"```
+pip install -r requirements.txt```
 
 ## 사용 방법
 
