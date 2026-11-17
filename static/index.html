@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>차량 객체 검지 하이퍼파라미터 추천 시스템</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --subtext: #475569;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --warning: #d97706;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: white;
+      padding: 28px 32px;
+      border-radius: 14px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    header h1 { font-size: 24px; margin-bottom: 8px; }
+    header p { font-size: 14px; color: #cbd5e1; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* 업로드 영역 */
+    .upload-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .file-label {
+      background-color: #eff6ff;
+      color: var(--primary);
+      border: 1px dashed var(--primary);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .file-label:hover { background-color: #dbeafe; }
+    input[type="file"] { display: none; }
+    .status-badge {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: #e2e8f0;
+      color: var(--subtext);
+    }
+    .status-badge.ready { background: #dcfce7; color: var(--success); }
+    .topk-control { margin-left: auto; font-size: 14px; font-weight: 600; }
+    .topk-control select {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      margin-left: 6px;
+    }
+
+    /* 썸네일 미리보기 */
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .thumb-box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f8fafc;
+      text-align: center;
+    }
+    .thumb-box img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      display: block;
+    }
+    .thumb-box span {
+      display: block;
+      font-size: 12px;
+      color: var(--subtext);
+      padding: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-run {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-run:hover:not(:disabled) { background-color: var(--primary-hover); }
+    .btn-run:disabled { background-color: #94a3b8; cursor: not-allowed; }
+
+    /* 결과 섹션 */
+    #resultSection { display: none; }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .metric-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .metric-title { font-size: 13px; color: var(--subtext); margin-bottom: 6px; }
+    .metric-value { font-size: 22px; font-weight: 800; color: var(--text); }
+    .metric-sub { font-size: 12px; color: var(--primary); margin-top: 4px; font-weight: 600; }
+
+    .info-banner {
+      background: #eff6ff;
+      border-left: 4px solid var(--primary);
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: #1e3a8a;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 20px;
+    }
+
+    /* 유사도 막대 그래프 */
+    .bar-group { margin-bottom: 14px; }
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .bar-track {
+      width: 100%;
+      height: 12px;
+      background: #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 6px;
+      transition: width 0.4s ease;
+    }
+
+    /* 테이블 */
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    th { background: #f8fafc; font-weight: 700; color: var(--subtext); }
+    tr:hover { background: #f8fafc; }
+    .badge-rank {
+      background: #dbeafe;
+      color: var(--primary);
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .metrics-grid, .two-col, .preview-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>차량 객체 검지 최적 하이퍼파라미터 추천 시스템</h1>
+      <p>샘플 도로 영상 5장의 공간주파수(SF) · 밝기(Brightness) · 채도(Saturation)를 분석하여 최적의 LR 및 해상도를 추천합니다.</p>
+    </header>
+
+    <!-- 1. 업로드 카드 -->
+    <section class="card">
+      <h2>1. 샘플 도로 이미지 업로드 (정확히 5장)</h2>
+      <div class="upload-bar">
+        <label for="imageInput" class="file-label">📂 이미지 5장 선택하기 (JPG, PNG)</label>
+        <input type="file" id="imageInput" accept=".jpg,.jpeg,.png" multiple />
+        <span id="fileStatus" class="status-badge">선택된 파일: 0 / 5장</span>
+
+        <div class="topk-control">
+          <label for="topKSelect">추천 순위 표시:</label>
+          <select id="topKSelect">
+            <option value="3" selected>Top 3</option>
+            <option value="5">Top 5</option>
+            <option value="10">Top 10</option>
+            <option value="16">전체 (16개)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="previewGrid" class="preview-grid"></div>
+      <button id="runBtn" class="btn-run" disabled>⚡ 최적 하이퍼파라미터 계산하기</button>
+    </section>
+
+    <!-- 2. 결과 섹션 -->
+    <div id="resultSection">
+      <section class="card">
+        <h2>2. 분석 요약 및 최적 파라미터 추천 (1순위)</h2>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-title">판정 대표 환경</div>
+            <div class="metric-value" id="resDomEnv">-</div>
+            <div class="metric-sub" id="resDomCode">-</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-title">추천 입력 해상도</div>
+            <div class="metric-value" id="resImgSize">-</div>
+            <div class="metric-sub">고정 종횡비 정방형 입력</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-title">최적 학습률 (LR 배수)</div>
+            <div class="metric-value" id="resLrMult">-</div>
+            <div class="metric-sub" id="resLrDetail">-</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-title">예상 mAP@0.5:0.95</div>
+            <div class="metric-value" id="resMap">-</div>
+            <div class="metric-sub" id="resMargin">-</div>
+          </div>
+        </div>
+        <div class="info-banner" id="resSummaryText"></div>
+      </section>
+
+      <div class="two-col">
+        <!-- 환경 유사도 -->
+        <section class="card">
+          <h2>3. 환경별 평균 유사도</h2>
+          <div id="similarityBars"></div>
+        </section>
+
+        <!-- Top-K 조합 -->
+        <section class="card">
+          <h2 id="topKTitle">4. Top-K 추천 조합 비교</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>순위</th>
+                <th>LR 배수</th>
+                <th>Main LR</th>
+                <th>Backbone LR</th>
+                <th>입력 해상도</th>
+                <th>예상 mAP50-95</th>
+              </tr>
+            </thead>
+            <tbody id="topKTableBody"></tbody>
+          </table>
+        </section>
+      </div>
+
+      <!-- 개별 이미지 특징 -->
+      <section class="card">
+        <h2>5. 샘플 이미지별 시각적 특징 및 유사도 상세</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>항목</th>
+              <th>파일명</th>
+              <th>최근접 환경</th>
+              <th>공간주파수 (SF)</th>
+              <th>밝기</th>
+              <th>채도</th>
+              <th>주간 유사도</th>
+              <th>야간 유사도</th>
+              <th>악천후 유사도</th>
+            </tr>
+          </thead>
+          <tbody id="indivTableBody"></tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const ENV_NAMES = {
+      DAY_CLEAR_NEW: "주간-맑음",
+      NIGHT: "야간",
+      WEATHER: "악천후",
+      MIXED: "복합 환경"
+    };
+
+    const imageInput = document.getElementById("imageInput");
+    const fileStatus = document.getElementById("fileStatus");
+    const previewGrid = document.getElementById("previewGrid");
+    const runBtn = document.getElementById("runBtn");
+    const topKSelect = document.getElementById("topKSelect");
+    const resultSection = document.getElementById("resultSection");
+
+    let selectedFiles = [];
+
+    imageInput.addEventListener("change", (e) => {
+      selectedFiles = Array.from(e.target.files);
+      previewGrid.innerHTML = "";
+      resultSection.style.display = "none";
+
+      if (selectedFiles.length === 5) {
+        fileStatus.textContent = "✅ 준비 완료: 5 / 5장";
+        fileStatus.classList.add("ready");
+        runBtn.disabled = false;
+      } else {
+        fileStatus.textContent = `⚠️ 정확히 5장을 선택하세요 (현재 ${selectedFiles.length}장)`;
+        fileStatus.classList.remove("ready");
+        runBtn.disabled = true;
+      }
+
+      selectedFiles.slice(0, 5).forEach((file, idx) => {
+        const box = document.createElement("div");
+        box.className = "thumb-box";
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        const label = document.createElement("span");
+        label.textContent = `사진 ${idx + 1}: ${file.name}`;
+        box.appendChild(img);
+        box.appendChild(label);
+        previewGrid.appendChild(box);
+      });
+    });
+
+    runBtn.addEventListener("click", async () => {
+      if (selectedFiles.length !== 5) return;
+
+      runBtn.disabled = true;
+      runBtn.textContent = "🔄 이미지 특징 분석 및 시뮬레이션 중...";
+
+      const formData = new FormData();
+      selectedFiles.forEach(file => formData.append("files", file));
+      const topK = topKSelect.value;
+
+      try {
+        const response = await fetch(`/api/recommend?top_k=${topK}`, {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "분석 요청 실패");
+        }
+
+        renderResults(data, topK);
+      } catch (err) {
+        alert("오류 발생: " + err.message);
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = "⚡ 최적 하이퍼파라미터 계산하기";
+      }
+    });
+
+    function renderResults(data, topK) {
+      const best = data.recommended;
+      const dom = data.dominant_environment;
+
+      document.getElementById("resDomEnv").textContent = ENV_NAMES[dom] || dom;
+      document.getElementById("resDomCode").textContent = dom;
+      document.getElementById("resImgSize").textContent = `${best.image_size} × ${best.image_size} px`;
+      document.getElementById("resLrMult").textContent = `${best.lr_multiplier}x`;
+      document.getElementById("resLrDetail").textContent = `Main: ${best.main_lr} / Backbone: ${best.backbone_lr}`;
+      document.getElementById("resMap").textContent = `${(best.expected_map50_95 * 100).toFixed(2)}%`;
+      document.getElementById("resMargin").textContent = `1위-2위 격차: ${data.recommendation_margin}`;
+
+      document.getElementById("resSummaryText").innerHTML =
+        `💡 <strong>추천 근거:</strong> 5장의 평균 환경 유사도를 반영한 결과, <strong>${best.image_size}px</strong> 해상도와 ` +
+        `<strong>${best.lr_multiplier}x</strong> 학습률 조합이 가장 높은 예상 성능(<strong>${(best.expected_map50_95 * 100).toFixed(2)}%</strong>)을 보입니다.`;
+
+      // 유사도 막대 렌더링
+      const simContainer = document.getElementById("similarityBars");
+      simContainer.innerHTML = "";
+      Object.entries(data.environment_similarity).forEach(([env, weight]) => {
+        const pct = (weight * 100).toFixed(2);
+        simContainer.innerHTML += `
+          <div class="bar-group">
+            <div class="bar-label">
+              <span>${ENV_NAMES[env] || env} (${env})</span>
+              <span>${pct}%</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      });
+
+      // Top-K 테이블 렌더링
+      document.getElementById("topKTitle").textContent = `4. Top-${topK} 추천 하이퍼파라미터 조합 비교`;
+      const topKBody = document.getElementById("topKTableBody");
+      topKBody.innerHTML = "";
+      data.top_k.forEach((item, idx) => {
+        topKBody.innerHTML += `
+          <tr>
+            <td><span class="badge-rank">${idx + 1}위</span></td>
+            <td><strong>${item.lr_multiplier}x</strong></td>
+            <td>${item.main_lr.toFixed(5)}</td>
+            <td>${item.backbone_lr.toFixed(7)}</td>
+            <td>${item.image_size} × ${item.image_size}</td>
+            <td><strong>${(item.expected_map50_95 * 100).toFixed(2)}%</strong></td>
+          </tr>
+        `;
+      });
+
+      // 개별 이미지 상세 테이블 렌더링
+      const indivBody = document.getElementById("indivTableBody");
+      indivBody.innerHTML = "";
+      data.individual_results.forEach((item, idx) => {
+        const sims = item.environment_similarity;
+        indivBody.innerHTML += `
+          <tr>
+            <td><strong>사진 ${idx + 1}</strong></td>
+            <td>${item.image}</td>
+            <td>${ENV_NAMES[item.nearest_environment] || item.nearest_environment}</td>
+            <td>${item.spatial_frequency.toFixed(4)}</td>
+            <td>${item.brightness.toFixed(4)}</td>
+            <td>${item.saturation.toFixed(4)}</td>
+            <td>${(sims.DAY_CLEAR_NEW * 100).toFixed(1)}%</td>
+            <td>${(sims.NIGHT * 100).toFixed(1)}%</td>
+            <td>${(sims.WEATHER * 100).toFixed(1)}%</td>
+          </tr>
+        `;
+      });
+
+      resultSection.style.display = "block";
+      resultSection.scrollIntoView({ behavior: "smooth" });
+    }
+  </script>
+</body>
+</html>
