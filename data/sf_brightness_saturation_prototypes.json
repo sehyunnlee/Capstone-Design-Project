@@ -1,0 +1,57 @@
+{
+  "method": "Spatial Frequency + Brightness + Saturation",
+  "analysis_size": 512,
+  "seed": 42,
+  "global_feature_scale": {
+    "spatial_frequency_std": 0.02362019776184471,
+    "brightness_std": 0.09038029626139447,
+    "saturation_std": 0.08743567161799476
+  },
+  "prototypes": {
+    "DAY_CLEAR_NEW": {
+      "spatial_frequency": {
+        "mean": 0.10755813533454124,
+        "std": 0.023314929289310785
+      },
+      "brightness": {
+        "mean": 0.4790235268055565,
+        "std": 0.08608425204265319
+      },
+      "saturation": {
+        "mean": 0.14627246084758858,
+        "std": 0.07868303156021199
+      },
+      "num_images": 2880
+    },
+    "NIGHT": {
+      "spatial_frequency": {
+        "mean": 0.09080691871085586,
+        "std": 0.023838857854552857
+      },
+      "brightness": {
+        "mean": 0.3646790949696744,
+        "std": 0.05733995836688435
+      },
+      "saturation": {
+        "mean": 0.21700921830272785,
+        "std": 0.07954072917904019
+      },
+      "num_images": 2160
+    },
+    "WEATHER": {
+      "spatial_frequency": {
+        "mean": 0.09469350563242462,
+        "std": 0.019587435867506886
+      },
+      "brightness": {
+        "mean": 0.391130711455588,
+        "std": 0.07436598401552245
+      },
+      "saturation": {
+        "mean": 0.1917114153366398,
+        "std": 0.08878374516405278
+      },
+      "num_images": 2160
+    }
+  }
+}
