@@ -14,7 +14,7 @@
       --subtext: #475569;
       --border: #e2e8f0;
       --success: #16a34a;
-      --warning: #d97706;
+      --danger: #dc2626;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -83,6 +83,7 @@
       color: var(--subtext);
     }
     .status-badge.ready { background: #dcfce7; color: var(--success); }
+    .status-badge.error { background: #fee2e2; color: var(--danger); }
     .topk-control { margin-left: auto; font-size: 14px; font-weight: 600; }
     .topk-control select {
       padding: 6px 10px;
@@ -219,7 +220,7 @@
   <div class="container">
     <header>
       <h1>차량 객체 검지 최적 하이퍼파라미터 추천 시스템</h1>
-      <p>샘플 도로 영상 5장의 공간주파수(SF) · 밝기(Brightness) · 채도(Saturation)를 분석하여 최적의 LR 및 해상도를 추천합니다.</p>
+      <p>샘플 도로 영상(1~5장)의 공간주파수(SF) · 밝기(Brightness) · 채도(Saturation)를 분석하여 최적의 LR 및 해상도를 추천합니다.</p>
     </header>
 
     <!-- 1. 업로드 카드 -->
@@ -341,39 +342,39 @@
     let selectedFiles = [];
 
     imageInput.addEventListener("change", (e) => {
-  selectedFiles = Array.from(e.target.files);
-  previewGrid.innerHTML = "";
-  resultSection.style.display = "none";
-  fileStatus.classList.remove("ready", "error");
+      selectedFiles = Array.from(e.target.files);
+      previewGrid.innerHTML = "";
+      resultSection.style.display = "none";
+      fileStatus.classList.remove("ready", "error");
 
-  if (selectedFiles.length >= 1 && selectedFiles.length <= 5) {
-    fileStatus.textContent = `✅ 준비 완료: ${selectedFiles.length} / 5장`;
-    fileStatus.classList.add("ready");
-    runBtn.disabled = false;
-  } else if (selectedFiles.length > 5) {
-    fileStatus.textContent = `⚠️ 최대 5장까지만 선택 가능합니다 (현재 ${selectedFiles.length}장)`;
-    fileStatus.classList.add("error");
-    runBtn.disabled = true;
-  } else {
-    fileStatus.textContent = "선택된 파일: 0 / 5장";
-    runBtn.disabled = true;
-  }
+      if (selectedFiles.length >= 1 && selectedFiles.length <= 5) {
+        fileStatus.textContent = `✅ 준비 완료: ${selectedFiles.length} / 5장`;
+        fileStatus.classList.add("ready");
+        runBtn.disabled = false;
+      } else if (selectedFiles.length > 5) {
+        fileStatus.textContent = `⚠️ 최대 5장까지만 선택 가능합니다 (현재 ${selectedFiles.length}장)`;
+        fileStatus.classList.add("error");
+        runBtn.disabled = true;
+      } else {
+        fileStatus.textContent = "선택된 파일: 0 / 5장";
+        runBtn.disabled = true;
+      }
 
-  selectedFiles.slice(0, 5).forEach((file, idx) => {
-    const box = document.createElement("div");
-    box.className = "thumb-box";
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
-    const label = document.createElement("span");
-    label.textContent = `사진 ${idx + 1}: ${file.name}`;
-    box.appendChild(img);
-    box.appendChild(label);
-    previewGrid.appendChild(box);
-  });
-});
+      selectedFiles.slice(0, 5).forEach((file, idx) => {
+        const box = document.createElement("div");
+        box.className = "thumb-box";
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        const label = document.createElement("span");
+        label.textContent = `사진 ${idx + 1}: ${file.name}`;
+        box.appendChild(img);
+        box.appendChild(label);
+        previewGrid.appendChild(box);
+      });
+    });
 
     runBtn.addEventListener("click", async () => {
-      if (selectedFiles.length !== 5) return;
+      if (selectedFiles.length < 1 || selectedFiles.length > 5) return;
 
       runBtn.disabled = true;
       runBtn.textContent = "🔄 이미지 특징 분석 및 시뮬레이션 중...";
@@ -405,6 +406,7 @@
     function renderResults(data, topK) {
       const best = data.recommended;
       const dom = data.dominant_environment;
+      const count = data.num_sample_images;
 
       document.getElementById("resDomEnv").textContent = ENV_NAMES[dom] || dom;
       document.getElementById("resDomCode").textContent = dom;
@@ -415,7 +417,7 @@
       document.getElementById("resMargin").textContent = `1위-2위 격차: ${data.recommendation_margin}`;
 
       document.getElementById("resSummaryText").innerHTML =
-        `💡 <strong>추천 근거:</strong> 5장의 평균 환경 유사도를 반영한 결과, <strong>${best.image_size}px</strong> 해상도와 ` +
+        `💡 <strong>추천 근거:</strong> ${count}장의 평균 환경 유사도를 반영한 결과, <strong>${best.image_size}px</strong> 해상도와 ` +
         `<strong>${best.lr_multiplier}x</strong> 학습률 조합이 가장 높은 예상 성능(<strong>${(best.expected_map50_95 * 100).toFixed(2)}%</strong>)을 보입니다.`;
 
       // 유사도 막대 렌더링
