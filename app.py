@@ -29,11 +29,11 @@ async def get_recommendation(
     files: List[UploadFile] = File(...),
     top_k: int = 3,
 ):
-    """샘플 이미지 5장을 받아 최적 하이퍼파라미터 추천 결과 반환"""
-    if len(files) != 5:
+    """샘플 이미지 1~5장을 받아 최적 하이퍼파라미터 추천 결과 반환"""
+    if not (1 <= len(files) <= 5):
         raise HTTPException(
             status_code=400,
-            detail=f"정확히 5장의 이미지가 필요합니다. (현재 업로드: {len(files)}장)",
+            detail=f"1장 이상 5장 이하의 이미지만 업로드할 수 있습니다. (현재 업로드: {len(files)}장)",
         )
 
     try:
