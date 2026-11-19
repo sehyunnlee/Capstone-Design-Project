@@ -1,6 +1,8 @@
+fastapi
+uvicorn
 opencv-python-headless
 numpy
 pandas
-fastapi
-uvicorn
 python-multipart
+google-genai
+pydantic
