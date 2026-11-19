@@ -364,9 +364,9 @@ def _validate_image_paths(
     ]
 
 
-    if len(paths) != 5:
+    if not (1 <= len(paths) <= 5):
         raise ValueError(
-            f"Exactly 5 sample images are required. "
+            f"1 to 5 sample images are required. "
             f"Received: {len(paths)}"
         )
 
