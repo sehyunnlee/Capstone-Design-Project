@@ -2,18 +2,25 @@
 # recommender.py
 #
 # Vehicle Detector Hyperparameter Recommender
-# (Hybrid: Gemini Vision API + Visual Statistics Fallback)
+# (Single-Batch Gemini Vision API + Visual Statistics Fallback)
 # ============================================================
 
 from pathlib import Path
-import math
 import json
+import math
 import os
+import time
 
 import cv2
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 try:
     from google import genai
@@ -47,14 +54,19 @@ EXPECTED_ENVIRONMENTS = ["DAY_CLEAR_NEW", "NIGHT", "WEATHER"]
 
 
 # ============================================================
-# 2. Gemini Structured Output 스키마 정의
+# 2. Gemini Structured Output 배치 스키마 정의
 # ============================================================
 
-class EnvironmentWeightsSchema(BaseModel):
+class SingleImageAnalysis(BaseModel):
+    index: int = Field(description="입력된 이미지 순서 번호 (1부터 시작)")
     DAY_CLEAR_NEW: float = Field(description="주간-맑음 환경 확률 (0.0 ~ 1.0)")
     NIGHT: float = Field(description="야간-맑음 환경 확률 (0.0 ~ 1.0)")
     WEATHER: float = Field(description="악천후(비, 눈, 안개, 젖은 노면 반사 등) 환경 확률 (0.0 ~ 1.0)")
     reason: str = Field(description="환경 판정 근거 한 줄 요약")
+
+
+class BatchEnvironmentSchema(BaseModel):
+    results: list[SingleImageAnalysis] = Field(description="입력된 모든 이미지 각각의 분석 결과 리스트")
 
 
 # ============================================================
@@ -189,60 +201,102 @@ def _calculate_weights_statistical(spatial_frequency, brightness, saturation):
 
 
 # ============================================================
-# 6-B. Gemini Vision API 기반 환경 유사도 계산 (기본 엔진)
+# 6-B. Gemini Vision API 단일 배치 호출 (1~5장 동시 분석)
 # ============================================================
 
-def _calculate_weights_llm(image_path: Path):
+def _resize_image_for_llm(image_path: Path, max_dim: int = 512) -> bytes:
+    """API 전송 속도를 높이기 위해 이미지를 512px 이하 JPEG로 경량화"""
+    img = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+    if img is None:
+        return image_path.read_bytes()
+
+    h, w = img.shape[:2]
+    if max(h, w) > max_dim:
+        scale = max_dim / max(h, w)
+        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+
+    ok, buf = cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+    return buf.tobytes() if ok else image_path.read_bytes()
+
+
+def _calculate_weights_llm_batch(image_paths: list[Path]):
+    if not GENAI_AVAILABLE:
+        print("[Fallback] google-genai 패키지가 설치되지 않았습니다.")
+        return None
+
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not (GENAI_AVAILABLE and api_key):
+    if not api_key:
+        print("[Fallback] GEMINI_API_KEY 환경 변수가 설정되지 않았습니다.")
         return None
 
-    try:
-        client = genai.Client(api_key=api_key)
-        image_bytes = image_path.read_bytes()
-        mime_type = "image/png" if image_path.suffix.lower() == ".png" else "image/jpeg"
+    client = genai.Client(api_key=api_key)
 
-        prompt = (
-            "당신은 도로 관제 CCTV 영상 환경 분류 전문가입니다. "
-            "첨부된 도로 이미지를 분석하여 다음 3가지 환경에 해당하는 확률을 산출하세요.\n"
-            "1. DAY_CLEAR_NEW: 주간이며 날씨가 맑고 노면이 건조한 환경\n"
-            "2. NIGHT: 야간이나 새벽이지만 비·눈·안개 없이 시야가 맑고 노면이 건조한 환경\n"
-            "3. WEATHER: 비, 눈, 안개, 흐림, 적설, 또는 빗물로 인해 젖은 노면 빛 반사가 있는 악천후 환경\n"
-            "세 확률(DAY_CLEAR_NEW, NIGHT, WEATHER)의 합은 반드시 1.0이 되어야 합니다."
-        )
+    contents = [
+        f"첨부된 {len(image_paths)}장의 도로 관제 CCTV 이미지를 순서대로(1번~{len(image_paths)}번) 각각 분석해 "
+        "환경별 확률(DAY_CLEAR_NEW, NIGHT, WEATHER의 합이 1.0)과 판정 근거를 반환하세요.\n"
+        "- DAY_CLEAR_NEW: 주간·맑음·건조 노면\n"
+        "- NIGHT: 야간·맑음·건조 노면\n"
+        "- WEATHER: 비, 눈, 안개, 흐림, 적설, 젖은 노면 반사 등 악천후"
+    ]
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[
-                types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-                prompt,
-            ],
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=EnvironmentWeightsSchema,
-                temperature=0.1,
-            ),
-        )
+    for idx, path in enumerate(image_paths, start=1):
+        img_bytes = _resize_image_for_llm(path, max_dim=512)
+        contents.append(f"[이미지 {idx}번]")
+        contents.append(types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"))
 
-        parsed = json.loads(response.text)
-        weights = {
-            "DAY_CLEAR_NEW": max(0.0, float(parsed["DAY_CLEAR_NEW"])),
-            "NIGHT": max(0.0, float(parsed["NIGHT"])),
-            "WEATHER": max(0.0, float(parsed["WEATHER"])),
-        }
+    # 실제 계정에 활성화된 안정 모델 순차 탐색 (혼잡 시 즉시 다음 모델로 우회)
+    candidate_models = [
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.6-flash",
+    ]
 
-        total = sum(weights.values())
-        if total <= 0:
-            return None
+    for model_name in candidate_models:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=BatchEnvironmentSchema,
+                    temperature=0.1,
+                ),
+            )
 
-        weights = {env: val / total for env, val in weights.items()}
-        # 확률의 역변환 개념으로 참고용 가상 거리 생성
-        distances = {env: round(-math.log(max(val, 1e-6)), 4) for env, val in weights.items()}
-        return distances, weights, parsed.get("reason", "")
+            parsed = json.loads(response.text)
+            items = parsed.get("results", [])
+            if len(items) != len(image_paths):
+                print(f"[Warning] 응답 이미지 개수 불일치 (요청: {len(image_paths)}, 응답: {len(items)})")
+                continue
 
-    except Exception as e:
-        print(f"[Warning] Gemini Vision API 호출 실패로 통계 모델로 전환합니다 ({image_path.name}): {e}")
-        return None
+            items.sort(key=lambda x: int(x.get("index", 0)))
+
+            batch_outputs = []
+            for item in items:
+                weights = {
+                    "DAY_CLEAR_NEW": max(0.0, float(item["DAY_CLEAR_NEW"])),
+                    "NIGHT": max(0.0, float(item["NIGHT"])),
+                    "WEATHER": max(0.0, float(item["WEATHER"])),
+                }
+                total = sum(weights.values())
+                if total <= 0:
+                    break
+
+                weights = {env: val / total for env, val in weights.items()}
+                distances = {env: round(-math.log(max(val, 1e-6)), 4) for env, val in weights.items()}
+                batch_outputs.append((distances, weights, item.get("reason", "")))
+
+            if len(batch_outputs) == len(image_paths):
+                print(f"[Success] {model_name} 모델로 {len(image_paths)}장 분석 완료!")
+                return batch_outputs
+
+        except Exception as e:
+            print(f"[Fallback-Model] {model_name} 건너뜀 -> 다음 모델 시도 ({str(e)[:80]})")
+            continue
+
+    print("[Warning] 모든 Gemini 모델 호출 실패로 통계 모델로 전환합니다.")
+    return None
 
 
 # ============================================================
@@ -298,7 +352,12 @@ def recommend(image_paths, top_k=3):
     sf_values, brightness_values, saturation_values = [], [], []
     used_engine = "statistical"
 
-    for image_path in image_paths:
+    # 1~5장 이미지를 단 1회의 배치 API 호출로 일괄 분석
+    batch_llm_results = _calculate_weights_llm_batch(image_paths)
+    if batch_llm_results is None:
+        batch_llm_results = [None] * len(image_paths)
+
+    for image_path, llm_result in zip(image_paths, batch_llm_results):
         features = _calculate_features(image_path)
         sf = features["spatial_frequency"]
         brightness = features["brightness"]
@@ -308,8 +367,6 @@ def recommend(image_paths, top_k=3):
         brightness_values.append(brightness)
         saturation_values.append(saturation)
 
-        # 1순위: Gemini Vision API 시도 / 실패 또는 키 미설정 시 통계 모델 자동 전환
-        llm_result = _calculate_weights_llm(image_path)
         if llm_result is not None:
             distances, weights, reason = llm_result
             used_engine = "gemini_vision"

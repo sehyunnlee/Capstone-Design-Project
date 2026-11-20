@@ -3,476 +3,742 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>차량 객체 검지 하이퍼파라미터 추천 시스템</title>
+  <title>차량 객체 검지기 하이퍼파라미터 추천 시스템</title>
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --bg: #f1f5f9;
+      --bg: #f4f6f9;
       --card: #ffffff;
-      --text: #0f172a;
-      --subtext: #475569;
-      --border: #e2e8f0;
-      --success: #16a34a;
-      --danger: #dc2626;
+      --primary: #1e40af;
+      --primary-hover: #1d4ed8;
+      --ai-bg: #eef2ff;
+      --ai-border: #c7d2fe;
+      --ai-text: #3730a3;
+      --text: #1f2937;
+      --subtext: #6b7280;
+      --border: #e5e7eb;
+      --accent-bg: #eff6ff;
+      --success: #059669;
+      --warning: #d97706;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
       background-color: var(--bg);
       color: var(--text);
-      line-height: 1.5;
-      padding: 24px;
+      line-height: 1.6;
+      padding: 2rem 1rem;
     }
-    .container { max-width: 1200px; margin: 0 auto; }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
     header {
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      color: white;
-      padding: 28px 32px;
-      border-radius: 14px;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      margin-bottom: 2rem;
     }
-    header h1 { font-size: 24px; margin-bottom: 8px; }
-    header p { font-size: 14px; color: #cbd5e1; }
+
+    .header-badge {
+      display: inline-block;
+      background: var(--ai-bg);
+      color: var(--ai-text);
+      border: 1px solid var(--ai-border);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 0.6rem;
+    }
+
+    header h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 0.4rem;
+    }
+
+    header p {
+      color: var(--subtext);
+      font-size: 0.95rem;
+    }
 
     .card {
       background: var(--card);
-      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
     }
-    .card h2 {
-      font-size: 18px;
-      margin-bottom: 14px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      color: #111827;
     }
 
     /* 업로드 영역 */
-    .upload-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .file-label {
-      background-color: #eff6ff;
-      color: var(--primary);
-      border: 1px dashed var(--primary);
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-weight: 600;
+    .upload-area {
+      border: 2px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 2.2rem 1rem;
+      text-align: center;
       cursor: pointer;
-      transition: 0.2s;
-    }
-    .file-label:hover { background-color: #dbeafe; }
-    input[type="file"] { display: none; }
-    .status-badge {
-      font-size: 13px;
-      font-weight: 600;
-      padding: 6px 12px;
-      border-radius: 20px;
-      background: #e2e8f0;
-      color: var(--subtext);
-    }
-    .status-badge.ready { background: #dcfce7; color: var(--success); }
-    .status-badge.error { background: #fee2e2; color: var(--danger); }
-    .topk-control { margin-left: auto; font-size: 14px; font-weight: 600; }
-    .topk-control select {
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      margin-left: 6px;
+      transition: all 0.2s ease;
+      background-color: #f8fafc;
     }
 
-    /* 썸네일 미리보기 */
+    .upload-area:hover, .upload-area.dragover {
+      border-color: var(--primary);
+      background-color: var(--accent-bg);
+    }
+
+    .upload-area p {
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 0.3rem;
+    }
+
+    .upload-area span {
+      font-size: 0.85rem;
+      color: var(--subtext);
+    }
+
     .preview-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-      margin-bottom: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 1.25rem;
     }
-    .thumb-box {
+
+    .preview-item {
       border: 1px solid var(--border);
       border-radius: 8px;
       overflow: hidden;
-      background: #f8fafc;
+      background: #fff;
       text-align: center;
     }
-    .thumb-box img {
+
+    .preview-item img {
       width: 100%;
-      height: 120px;
+      height: 110px;
       object-fit: cover;
       display: block;
     }
-    .thumb-box span {
-      display: block;
-      font-size: 12px;
+
+    .preview-item .filename {
+      font-size: 0.78rem;
+      padding: 0.4rem;
       color: var(--subtext);
-      padding: 6px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .btn-run {
+    .btn-submit {
+      display: block;
       width: 100%;
-      padding: 14px;
+      margin-top: 1.5rem;
+      padding: 0.9rem;
       background-color: var(--primary);
       color: white;
       border: none;
       border-radius: 8px;
-      font-size: 16px;
-      font-weight: 700;
+      font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: 0.2s;
+      transition: background 0.2s;
     }
-    .btn-run:hover:not(:disabled) { background-color: var(--primary-hover); }
-    .btn-run:disabled { background-color: #94a3b8; cursor: not-allowed; }
 
-    /* 결과 섹션 */
-    #resultSection { display: none; }
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 16px;
+    .btn-submit:hover:not(:disabled) {
+      background-color: var(--primary-hover);
     }
-    .metric-box {
-      background: #f8fafc;
-      border: 1px solid var(--border);
+
+    .btn-submit:disabled {
+      background-color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .error-box {
+      display: none;
+      background-color: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      padding: 0.9rem 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    /* 결과 대시보드 */
+    #resultSection {
+      display: none;
+    }
+
+    /* AI 엔진 명시 배너 */
+    .engine-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+      border: 1px solid #c7d2fe;
       border-radius: 10px;
-      padding: 16px;
-    }
-    .metric-title { font-size: 13px; color: var(--subtext); margin-bottom: 6px; }
-    .metric-value { font-size: 22px; font-weight: 800; color: var(--text); }
-    .metric-sub { font-size: 12px; color: var(--primary); margin-top: 4px; font-weight: 600; }
-
-    .info-banner {
-      background: #eff6ff;
-      border-left: 4px solid var(--primary);
-      padding: 12px 16px;
-      border-radius: 6px;
-      font-size: 14px;
-      color: #1e3a8a;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
     }
 
-    .two-col {
+    .engine-banner.fallback {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .engine-title {
+      font-weight: 700;
+      color: #1e1b4b;
+      font-size: 0.98rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .engine-desc {
+      font-size: 0.85rem;
+      color: #4338ca;
+      margin-top: 0.15rem;
+    }
+
+    .engine-banner.fallback .engine-title {
+      color: #334155;
+    }
+
+    .engine-banner.fallback .engine-desc {
+      color: #64748b;
+    }
+
+    .engine-pill {
+      background: #4338ca;
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      letter-spacing: 0.02em;
+    }
+
+    .engine-banner.fallback .engine-pill {
+      background: #475569;
+    }
+
+    .highlight-grid {
       display: grid;
-      grid-template-columns: 1fr 1.6fr;
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
     }
 
-    /* 유사도 막대 그래프 */
-    .bar-group { margin-bottom: 14px; }
-    .bar-label {
+    .stat-box {
+      background: var(--accent-bg);
+      border: 1px solid #dbeafe;
+      border-radius: 10px;
+      padding: 1.1rem;
+      text-align: center;
+    }
+
+    .stat-box .label {
+      font-size: 0.82rem;
+      color: #1e3a8a;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .stat-box .value {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-box .sub {
+      font-size: 0.78rem;
+      color: #3b82f6;
+      margin-top: 0.2rem;
+    }
+
+    .summary-banner {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      padding: 1rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.93rem;
+    }
+
+    /* 유사도 바 */
+    .bar-group {
+      margin-bottom: 0.9rem;
+    }
+
+    .bar-header {
       display: flex;
       justify-content: space-between;
-      font-size: 13px;
+      font-size: 0.9rem;
       font-weight: 600;
-      margin-bottom: 4px;
+      margin-bottom: 0.35rem;
     }
+
     .bar-track {
       width: 100%;
       height: 12px;
-      background: #e2e8f0;
-      border-radius: 6px;
+      background-color: #e5e7eb;
+      border-radius: 999px;
       overflow: hidden;
     }
+
     .bar-fill {
       height: 100%;
-      background: var(--primary);
-      border-radius: 6px;
-      transition: width 0.4s ease;
+      background-color: var(--primary);
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: var(--primary);
     }
 
     /* 테이블 */
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      text-align: center;
-    }
-    th { background: #f8fafc; font-weight: 700; color: var(--subtext); }
-    tr:hover { background: #f8fafc; }
-    .badge-rank {
-      background: #dbeafe;
-      color: var(--primary);
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 12px;
+    .table-wrap {
+      overflow-x: auto;
     }
 
-    @media (max-width: 900px) {
-      .metrics-grid, .two-col, .preview-grid { grid-template-columns: 1fr; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: center;
+    }
+
+    th, td {
+      padding: 0.75rem 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background-color: #f8fafc;
+      font-weight: 700;
+      color: #374151;
+      white-space: nowrap;
+    }
+
+    tr.top-rank {
+      background-color: #eff6ff;
+      font-weight: 600;
+    }
+
+    td.reason-cell {
+      text-align: left;
+      color: #1e293b;
+      font-size: 0.84rem;
+      min-width: 220px;
+    }
+
+    .loader {
+      display: none;
+      text-align: center;
+      margin-top: 1rem;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.95rem;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>차량 객체 검지 최적 하이퍼파라미터 추천 시스템</h1>
-      <p>샘플 도로 영상(1~5장)의 공간주파수(SF) · 밝기(Brightness) · 채도(Saturation)를 분석하여 최적의 LR 및 해상도를 추천합니다.</p>
+      <div class="header-badge">🤖 Multimodal Vision AI + Statistical Hybrid Engine</div>
+      <h1>차량 객체 검지기(RT-DETRv4-L) 하이퍼파라미터 추천 시스템</h1>
+      <p>배포 환경의 도로 CCTV 샘플 이미지(1~5장)를 멀티모달 비전 AI로 정밀 진단하여 최적의 학습률과 입력 해상도를 도출합니다.</p>
     </header>
 
-    <!-- 1. 업로드 카드 -->
-    <section class="card">
-      <h2>1. 샘플 도로 이미지 업로드 (1~5장 선택 가능)</h2>
-      <div class="upload-bar">
-        <label for="imageInput" class="file-label">📂 이미지 선택하기 (최대 5장)</label>
-        <input type="file" id="imageInput" accept=".jpg,.jpeg,.png" multiple />
-        <span id="fileStatus" class="status-badge">선택된 파일: 0 / 5장</span>
-
-        <div class="topk-control">
-          <label for="topKSelect">추천 순위 표시:</label>
-          <select id="topKSelect">
-            <option value="3" selected>Top 3</option>
-            <option value="5">Top 5</option>
-            <option value="10">Top 10</option>
-            <option value="16">전체 (16개)</option>
-          </select>
-        </div>
+    <!-- 입력 카드 -->
+    <div class="card">
+      <div class="card-title">
+        <span>1. 샘플 도로 이미지 업로드 (1~5장 선택)</span>
+      </div>
+      <div class="upload-area" id="dropZone">
+        <p>클릭하거나 이미지 파일을 이곳으로 드래그하세요</p>
+        <span>JPG, JPEG, PNG 형식 지원 · AI가 조도, 노면 반사, 기상 상태를 종합 분석합니다</span>
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png" multiple style="display:none;" />
       </div>
 
-      <div id="previewGrid" class="preview-grid"></div>
-      <button id="runBtn" class="btn-run" disabled>⚡ 최적 하이퍼파라미터 계산하기</button>
-    </section>
+      <div class="preview-grid" id="previewGrid"></div>
 
-    <!-- 2. 결과 섹션 -->
+      <div class="error-box" id="errorBox"></div>
+      <div class="loader" id="loader">🤖 Vision AI가 도로 환경(주간·야간·악천후)과 노면 상태를 분석하고 있습니다...</div>
+
+      <button class="btn-submit" id="submitBtn" disabled>AI 환경 진단 및 최적 하이퍼파라미터 계산하기</button>
+    </div>
+
+    <!-- 결과 섹션 -->
     <div id="resultSection">
-      <section class="card">
-        <h2>2. 분석 요약 및 최적 파라미터 추천 (1순위)</h2>
-        <div class="metrics-grid">
-          <div class="metric-box">
-            <div class="metric-title">판정 대표 환경</div>
-            <div class="metric-value" id="resDomEnv">-</div>
-            <div class="metric-sub" id="resDomCode">-</div>
+      <!-- 추천 결과 요약 -->
+      <div class="card">
+        <div class="card-title">
+          <span>2. AI 기반 최적 하이퍼파라미터 추천 결과</span>
+        </div>
+
+        <!-- 사용된 AI 엔진 명시 배너 -->
+        <div class="engine-banner" id="engineBanner">
+          <div>
+            <div class="engine-title" id="engineTitle">🤖 Gemini Vision AI 멀티모달 정밀 진단 적용됨</div>
+            <div class="engine-desc" id="engineDesc">비전 AI가 입력 영상의 주간·야간 조도, 젖은 노면 반사, 강설·안개 등 시각적 맥락을 직접 판별하여 환경 가중치를 산출했습니다.</div>
           </div>
-          <div class="metric-box">
-            <div class="metric-title">추천 입력 해상도</div>
-            <div class="metric-value" id="resImgSize">-</div>
-            <div class="metric-sub">고정 종횡비 정방형 입력</div>
+          <span class="engine-pill" id="enginePill">VISION AI ENGINE</span>
+        </div>
+
+        <div class="highlight-grid">
+          <div class="stat-box">
+            <div class="label">추천 입력 해상도 (Image Size)</div>
+            <div class="value" id="resImageSize">-</div>
+            <div class="sub">RT-DETRv4-L 입력 크기</div>
           </div>
-          <div class="metric-box">
-            <div class="metric-title">최적 학습률 (LR 배수)</div>
-            <div class="metric-value" id="resLrMult">-</div>
-            <div class="metric-sub" id="resLrDetail">-</div>
+          <div class="stat-box">
+            <div class="label">추천 학습률 배수 (LR Multiplier)</div>
+            <div class="value" id="resLrMult">-</div>
+            <div class="sub" id="resLrDetail">Main: - / Backbone: -</div>
           </div>
-          <div class="metric-box">
-            <div class="metric-title">예상 mAP@0.5:0.95</div>
-            <div class="metric-value" id="resMap">-</div>
-            <div class="metric-sub" id="resMargin">-</div>
+          <div class="stat-box">
+            <div class="label">예상 검출 성능 (Expected mAP50-95)</div>
+            <div class="value" id="resMap">-</div>
+            <div class="sub" id="resMargin">신뢰도 여유분: -</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">AI 판정 대표 환경 (Dominant Env)</div>
+            <div class="value" id="resDomEnv">-</div>
+            <div class="sub" id="resSampleCount">분석 샘플: -장</div>
           </div>
         </div>
-        <div class="info-banner" id="resSummaryText"></div>
-      </section>
+        <div class="summary-banner" id="resSummaryText"></div>
+      </div>
 
-      <div class="two-col">
-        <!-- 환경 유사도 -->
-        <section class="card">
-          <h2>3. 환경별 평균 유사도</h2>
-          <div id="similarityBars"></div>
-        </section>
+      <!-- 환경 유사도 & 특징 비교 -->
+      <div class="card">
+        <div class="card-title">
+          <span>3. AI 환경 분류 확률 및 시각 특징 요약</span>
+          <span class="badge" id="domEnvBadge">-</span>
+        </div>
 
-        <!-- Top-K 조합 -->
-        <section class="card">
-          <h2 id="topKTitle">4. Top-K 추천 조합 비교</h2>
+        <div class="bar-group">
+          <div class="bar-header">
+            <span>주간-맑음 (DAY_CLEAR_NEW)</span>
+            <span id="simDayText">0%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" id="simDayBar" style="width:0%"></div></div>
+        </div>
+
+        <div class="bar-group">
+          <div class="bar-header">
+            <span>야간 (NIGHT)</span>
+            <span id="simNightText">0%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" id="simNightBar" style="width:0%"></div></div>
+        </div>
+
+        <div class="bar-group">
+          <div class="bar-header">
+            <span>악천후 (WEATHER)</span>
+            <span id="simWeatherText">0%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" id="simWeatherBar" style="width:0%"></div></div>
+        </div>
+
+        <p style="margin-top:1.1rem; font-size:0.88rem; color:var(--subtext);" id="featureStatsText"></p>
+      </div>
+
+      <!-- Top-K 랭킹 테이블 -->
+      <div class="card">
+        <div class="card-title">
+          <span>4. 상위 추천 하이퍼파라미터 후보 (Top-5)</span>
+        </div>
+        <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>순위</th>
+                <th>입력 해상도</th>
                 <th>LR 배수</th>
                 <th>Main LR</th>
                 <th>Backbone LR</th>
-                <th>입력 해상도</th>
                 <th>예상 mAP50-95</th>
+                <th>주간 성능</th>
+                <th>야간 성능</th>
+                <th>악천후 성능</th>
               </tr>
             </thead>
-            <tbody id="topKTableBody"></tbody>
+            <tbody id="topKBody"></tbody>
           </table>
-        </section>
+        </div>
       </div>
 
-      <!-- 개별 이미지 특징 -->
-      <section class="card">
-        <h2>5. 샘플 이미지별 시각적 특징 및 유사도 상세</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>항목</th>
-              <th>파일명</th>
-              <th>최근접 환경</th>
-              <th>공간주파수 (SF)</th>
-              <th>밝기</th>
-              <th>채도</th>
-              <th>주간 유사도</th>
-              <th>야간 유사도</th>
-              <th>악천후 유사도</th>
-            </tr>
-          </thead>
-          <tbody id="indivTableBody"></tbody>
-        </table>
-      </section>
+      <!-- 개별 이미지 분석 테이블 -->
+      <div class="card">
+        <div class="card-title">
+          <span>5. 개별 샘플 이미지별 AI 진단 근거 및 물리 통계</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>파일명</th>
+                <th>AI 판정 환경</th>
+                <th>AI 환경 판정 근거</th>
+                <th>주간 확률</th>
+                <th>야간 확률</th>
+                <th>악천후 확률</th>
+                <th>공간주파수(SF)</th>
+                <th>밝기</th>
+                <th>채도</th>
+              </tr>
+            </thead>
+            <tbody id="indivBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    const ENV_NAMES = {
-      DAY_CLEAR_NEW: "주간-맑음",
-      NIGHT: "야간",
-      WEATHER: "악천후",
-      MIXED: "복합 환경"
-    };
-
-    const imageInput = document.getElementById("imageInput");
-    const fileStatus = document.getElementById("fileStatus");
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
     const previewGrid = document.getElementById("previewGrid");
-    const runBtn = document.getElementById("runBtn");
-    const topKSelect = document.getElementById("topKSelect");
+    const submitBtn = document.getElementById("submitBtn");
+    const errorBox = document.getElementById("errorBox");
+    const loader = document.getElementById("loader");
     const resultSection = document.getElementById("resultSection");
 
     let selectedFiles = [];
 
-    imageInput.addEventListener("change", (e) => {
-      selectedFiles = Array.from(e.target.files);
-      previewGrid.innerHTML = "";
-      resultSection.style.display = "none";
-      fileStatus.classList.remove("ready", "error");
+    const ENV_LABELS = {
+      DAY_CLEAR_NEW: "주간-맑음",
+      NIGHT: "야간",
+      WEATHER: "악천후",
+      MIXED: "복합 환경 (MIXED)"
+    };
 
-      if (selectedFiles.length >= 1 && selectedFiles.length <= 5) {
-        fileStatus.textContent = `✅ 준비 완료: ${selectedFiles.length} / 5장`;
-        fileStatus.classList.add("ready");
-        runBtn.disabled = false;
-      } else if (selectedFiles.length > 5) {
-        fileStatus.textContent = `⚠️ 최대 5장까지만 선택 가능합니다 (현재 ${selectedFiles.length}장)`;
-        fileStatus.classList.add("error");
-        runBtn.disabled = true;
-      } else {
-        fileStatus.textContent = "선택된 파일: 0 / 5장";
-        runBtn.disabled = true;
-      }
+    dropZone.addEventListener("click", () => fileInput.click());
 
-      selectedFiles.slice(0, 5).forEach((file, idx) => {
-        const box = document.createElement("div");
-        box.className = "thumb-box";
-        const img = document.createElement("img");
-        img.src = URL.createObjectURL(file);
-        const label = document.createElement("span");
-        label.textContent = `사진 ${idx + 1}: ${file.name}`;
-        box.appendChild(img);
-        box.appendChild(label);
-        previewGrid.appendChild(box);
-      });
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
     });
 
-    runBtn.addEventListener("click", async () => {
-      if (selectedFiles.length < 1 || selectedFiles.length > 5) return;
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragover");
+    });
 
-      runBtn.disabled = true;
-      runBtn.textContent = "🔄 이미지 특징 분석 및 시뮬레이션 중...";
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      handleFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      handleFiles(e.target.files);
+    });
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.display = "block";
+    }
+
+    function clearError() {
+      errorBox.style.display = "none";
+      errorBox.textContent = "";
+    }
+
+    function handleFiles(files) {
+      clearError();
+      const validFiles = Array.from(files).filter(f => /\.(jpe?g|png)$/i.test(f.name));
+
+      if (validFiles.length === 0) {
+        showError("JPG, JPEG, PNG 형식의 이미지 파일만 업로드할 수 있습니다.");
+        return;
+      }
+
+      if (validFiles.length > 5) {
+        showError(`최대 5장까지만 선택할 수 있습니다. (현재 ${validFiles.length}장 선택됨)`);
+        selectedFiles = validFiles.slice(0, 5);
+      } else {
+        selectedFiles = validFiles;
+      }
+
+      renderPreviews();
+      submitBtn.disabled = selectedFiles.length === 0;
+    }
+
+    function renderPreviews() {
+      previewGrid.innerHTML = "";
+      selectedFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const div = document.createElement("div");
+          div.className = "preview-item";
+          div.innerHTML = `
+            <img src="${e.target.result}" alt="${file.name}" />
+            <div class="filename" title="${file.name}">${file.name}</div>
+          `;
+          previewGrid.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    submitBtn.addEventListener("click", async () => {
+      if (selectedFiles.length < 1 || selectedFiles.length > 5) {
+        showError("1장 이상 5장 이하의 이미지를 선택해 주세요.");
+        return;
+      }
+
+      clearError();
+      submitBtn.disabled = true;
+      loader.style.display = "block";
+      resultSection.style.display = "none";
 
       const formData = new FormData();
       selectedFiles.forEach(file => formData.append("files", file));
-      const topK = topKSelect.value;
+      formData.append("top_k", "5");
 
       try {
-        const response = await fetch(`/api/recommend?top_k=${topK}`, {
+        const response = await fetch("/api/recommend", {
           method: "POST",
           body: formData
         });
 
         const data = await response.json();
         if (!response.ok) {
-          throw new Error(data.detail || "분석 요청 실패");
+          throw new Error(data.detail || "분석 요청 중 오류가 발생했습니다.");
         }
 
-        renderResults(data, topK);
+        renderResults(data);
       } catch (err) {
-        alert("오류 발생: " + err.message);
+        showError(err.message);
       } finally {
-        runBtn.disabled = false;
-        runBtn.textContent = "⚡ 최적 하이퍼파라미터 계산하기";
+        loader.style.display = "none";
+        submitBtn.disabled = false;
       }
     });
 
-    function renderResults(data, topK) {
+    function renderResults(data) {
       const best = data.recommended;
-      const dom = data.dominant_environment;
+      const sim = data.environment_similarity;
       const count = data.num_sample_images;
+      const isAI = data.diagnosis_engine === "gemini_vision";
 
-      document.getElementById("resDomEnv").textContent = ENV_NAMES[dom] || dom;
-      document.getElementById("resDomCode").textContent = dom;
-      document.getElementById("resImgSize").textContent = `${best.image_size} × ${best.image_size} px`;
+      // AI 엔진 배너 업데이트
+      const engineBanner = document.getElementById("engineBanner");
+      const engineTitle = document.getElementById("engineTitle");
+      const engineDesc = document.getElementById("engineDesc");
+      const enginePill = document.getElementById("enginePill");
+
+      if (isAI) {
+        engineBanner.classList.remove("fallback");
+        engineTitle.textContent = "🤖 Gemini Vision AI 멀티모달 정밀 진단 적용됨";
+        engineDesc.textContent = "비전 AI가 입력 영상의 주간·야간 조도, 젖은 노면 반사, 강설·안개 등 시각적 맥락을 직접 판별하여 환경 가중치를 산출했습니다.";
+        enginePill.textContent = "GEMINI VISION AI";
+      } else {
+        engineBanner.classList.add("fallback");
+        engineTitle.textContent = "📊 시각 통계(SF·밝기·채도) Fallback 엔진으로 진단됨";
+        engineDesc.textContent = "AI API 미연결 또는 일시 혼잡으로 인해 공간주파수(SF), 평균 밝기, 채도 통계 거리 기반으로 환경 가중치를 산출했습니다.";
+        enginePill.textContent = "STATISTICAL FALLBACK";
+      }
+
+      document.getElementById("resImageSize").textContent = `${best.image_size} px`;
       document.getElementById("resLrMult").textContent = `${best.lr_multiplier}x`;
       document.getElementById("resLrDetail").textContent = `Main: ${best.main_lr} / Backbone: ${best.backbone_lr}`;
       document.getElementById("resMap").textContent = `${(best.expected_map50_95 * 100).toFixed(2)}%`;
-      document.getElementById("resMargin").textContent = `1위-2위 격차: ${data.recommendation_margin}`;
+      document.getElementById("resMargin").textContent = `신뢰도 등급: ${data.recommendation_margin} (+${(data.score_margin_top1_top2 * 100).toFixed(2)}%)`;
+      document.getElementById("resDomEnv").textContent = ENV_LABELS[data.dominant_environment] || data.dominant_environment;
+      document.getElementById("resSampleCount").textContent = `분석 샘플: ${count}장`;
 
+      const engineShort = isAI ? "Gemini Vision AI 환경 진단" : "시각 통계 기반 진단";
       document.getElementById("resSummaryText").innerHTML =
-        `💡 <strong>추천 근거:</strong> ${count}장의 평균 환경 유사도를 반영한 결과, <strong>${best.image_size}px</strong> 해상도와 ` +
-        `<strong>${best.lr_multiplier}x</strong> 학습률 조합이 가장 높은 예상 성능(<strong>${(best.expected_map50_95 * 100).toFixed(2)}%</strong>)을 보입니다.`;
+        `💡 <strong>추천 근거 (${engineShort}):</strong> 업로드된 <strong>${count}장</strong>의 평균 환경 확률을 성능 그리드에 반영한 결과, ` +
+        `<strong>${best.image_size}px</strong> 해상도와 <strong>${best.lr_multiplier}x</strong> 학습률 조합이 가장 높은 예상 성능(` +
+        `<strong>${(best.expected_map50_95 * 100).toFixed(2)}%</strong>)을 보입니다.`;
 
-      // 유사도 막대 렌더링
-      const simContainer = document.getElementById("similarityBars");
-      simContainer.innerHTML = "";
-      Object.entries(data.environment_similarity).forEach(([env, weight]) => {
-        const pct = (weight * 100).toFixed(2);
-        simContainer.innerHTML += `
-          <div class="bar-group">
-            <div class="bar-label">
-              <span>${ENV_NAMES[env] || env} (${env})</span>
-              <span>${pct}%</span>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill" style="width: ${pct}%"></div>
-            </div>
-          </div>
-        `;
-      });
+      // 유사도 바 업데이트
+      const dayPct = (sim.DAY_CLEAR_NEW * 100).toFixed(1);
+      const nightPct = (sim.NIGHT * 100).toFixed(1);
+      const weatherPct = (sim.WEATHER * 100).toFixed(1);
 
-      // Top-K 테이블 렌더링
-      document.getElementById("topKTitle").textContent = `4. Top-${topK} 추천 하이퍼파라미터 조합 비교`;
-      const topKBody = document.getElementById("topKTableBody");
+      document.getElementById("domEnvBadge").textContent = ENV_LABELS[data.dominant_environment] || data.dominant_environment;
+      document.getElementById("simDayText").textContent = `${dayPct}%`;
+      document.getElementById("simDayBar").style.width = `${dayPct}%`;
+      document.getElementById("simNightText").textContent = `${nightPct}%`;
+      document.getElementById("simNightBar").style.width = `${nightPct}%`;
+      document.getElementById("simWeatherText").textContent = `${weatherPct}%`;
+      document.getElementById("simWeatherBar").style.width = `${weatherPct}%`;
+
+      document.getElementById("featureStatsText").textContent =
+        `참고 물리 통계 평균 (${count}장) — 공간주파수(SF): ${data.sample_spatial_frequency.toFixed(4)} (±${data.sample_spatial_frequency_std.toFixed(4)}), ` +
+        `밝기: ${data.sample_brightness.toFixed(4)} (±${data.sample_brightness_std.toFixed(4)}), ` +
+        `채도: ${data.sample_saturation.toFixed(4)} (±${data.sample_saturation_std.toFixed(4)})`;
+
+      // Top-K 테이블
+      const topKBody = document.getElementById("topKBody");
       topKBody.innerHTML = "";
       data.top_k.forEach((item, idx) => {
-        topKBody.innerHTML += `
-          <tr>
-            <td><span class="badge-rank">${idx + 1}위</span></td>
-            <td><strong>${item.lr_multiplier}x</strong></td>
-            <td>${item.main_lr.toFixed(5)}</td>
-            <td>${item.backbone_lr.toFixed(7)}</td>
-            <td>${item.image_size} × ${item.image_size}</td>
-            <td><strong>${(item.expected_map50_95 * 100).toFixed(2)}%</strong></td>
-          </tr>
+        const tr = document.createElement("tr");
+        if (idx === 0) tr.className = "top-rank";
+        tr.innerHTML = `
+          <td>${idx + 1}위</td>
+          <td>${item.image_size} px</td>
+          <td>${item.lr_multiplier}x</td>
+          <td>${item.main_lr}</td>
+          <td>${item.backbone_lr}</td>
+          <td><strong>${(item.expected_map50_95 * 100).toFixed(2)}%</strong></td>
+          <td>${(item.environment_maps.DAY_CLEAR_NEW * 100).toFixed(1)}%</td>
+          <td>${(item.environment_maps.NIGHT * 100).toFixed(1)}%</td>
+          <td>${(item.environment_maps.WEATHER * 100).toFixed(1)}%</td>
         `;
+        topKBody.appendChild(tr);
       });
 
-      // 개별 이미지 상세 테이블 렌더링
-      const indivBody = document.getElementById("indivTableBody");
+      // 개별 이미지 테이블 (AI 진단 근거 포함)
+      const indivBody = document.getElementById("indivBody");
       indivBody.innerHTML = "";
-      data.individual_results.forEach((item, idx) => {
-        const sims = item.environment_similarity;
-        indivBody.innerHTML += `
-          <tr>
-            <td><strong>사진 ${idx + 1}</strong></td>
-            <td>${item.image}</td>
-            <td>${ENV_NAMES[item.nearest_environment] || item.nearest_environment}</td>
-            <td>${item.spatial_frequency.toFixed(4)}</td>
-            <td>${item.brightness.toFixed(4)}</td>
-            <td>${item.saturation.toFixed(4)}</td>
-            <td>${(sims.DAY_CLEAR_NEW * 100).toFixed(1)}%</td>
-            <td>${(sims.NIGHT * 100).toFixed(1)}%</td>
-            <td>${(sims.WEATHER * 100).toFixed(1)}%</td>
-          </tr>
+      data.individual_results.forEach((item) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.image}</td>
+          <td><span class="badge">${ENV_LABELS[item.nearest_environment] || item.nearest_environment}</span></td>
+          <td class="reason-cell">${item.diagnosis_reason || "-"}</td>
+          <td>${(item.environment_similarity.DAY_CLEAR_NEW * 100).toFixed(1)}%</td>
+          <td>${(item.environment_similarity.NIGHT * 100).toFixed(1)}%</td>
+          <td>${(item.environment_similarity.WEATHER * 100).toFixed(1)}%</td>
+          <td>${item.spatial_frequency.toFixed(4)}</td>
+          <td>${item.brightness.toFixed(4)}</td>
+          <td>${item.saturation.toFixed(4)}</td>
         `;
+        indivBody.appendChild(tr);
       });
 
       resultSection.style.display = "block";
